@@ -1,0 +1,16 @@
+<robot name="2dof_arm">
+  <link name="base"/>
+  <link name="link1"/>
+  <link name="link2"/>
+  
+  <joint name="joint1" type="revolute">
+    <parent link="base"/>
+    <child link="link1"/>
+    <limit lower="-3.14" upper="3.14"/>
+  </joint>
+  
+  <joint name="joint2" type="revolute">
+    <parent link="link1"/>
+    <child link="link2"/>
+  </joint>
+</robot>
