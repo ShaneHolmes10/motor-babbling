@@ -161,12 +161,11 @@ class ControlPanelBuilder:
 
         return self
 
-    def add_label(self, label_id, text, font_size="small", color=(255, 255, 255)):
+    def add_label(self, label_id, text, font_size=24, color=(255, 255, 255)):
         label_x = self.base_x + self.panel_padding + Container.content_padding_x
         label = Label(label_x, 0, text, label_id, font_size, color)
 
-        font_heights = {"small": 24, "medium": 28, "large": 36}
-        label_height = font_heights.get(font_size, 24)
+        label_height = font_size
 
         if self.container_stack:
             self.container_stack[-1].add_component(label)

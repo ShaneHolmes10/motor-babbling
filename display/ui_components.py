@@ -82,6 +82,12 @@ class Container(Component):
 
     def draw(self, screen):
         container_rect = pygame.Rect(self.x, self.y, self.width, self.height)
+        screen_rect = screen.get_rect()
+        container_rect = container_rect.clip(screen_rect)
+
+        if container_rect.width <= 0 or container_rect.height <= 0:
+            return  # Container is completely off-screen, don't draw
+
         pygame.draw.rect(screen, self.background_color, container_rect, border_radius=5)
 
         if self.title:
