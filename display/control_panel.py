@@ -63,7 +63,7 @@ class ControlPanel(Component):
 
 class ControlPanelBuilder:
     component_spacing = 10
-    panel_padding = 20
+    panel_padding = 10
 
     def __init__(self, x, y, width, height):
         self.panel = ControlPanel(x, y, width, height)
@@ -106,7 +106,7 @@ class ControlPanelBuilder:
     ):
         if width is None:
             if self.container_stack:
-                width = self.container_stack[-1].width - 2 * Container.content_padding_x
+                width = self.container_stack[-1].width - 4 * Container.content_padding_x - Container.scrollbar_width
             else:
                 width = self.base_width - 2 * self.panel_padding
 
@@ -143,7 +143,7 @@ class ControlPanelBuilder:
     ):  # CALLBACK ADDED
         if width is None:
             if self.container_stack:
-                width = self.container_stack[-1].width - 2 * Container.content_padding_x
+                width = self.container_stack[-1].width - 4 * Container.content_padding_x - Container.scrollbar_width
             else:
                 width = self.base_width - 2 * self.panel_padding
 
