@@ -1,0 +1,50 @@
+<robot name="2dof_arm">
+
+  <!-- Base link -->
+  <link name="base">
+    <visual>
+      <geometry>
+        <cylinder radius="0.05" length="0.1"/>
+      </geometry>
+    </visual>
+  </link>
+
+  <!-- First arm link -->
+  <link name="link1">
+    <visual>
+      <origin xyz="0.25 0 0" rpy="0 0 0"/>  <!-- Center of the box -->
+      <geometry>
+        <box size="0.5 0.05 0.05"/> 
+      </geometry>
+    </visual>
+  </link>
+
+  <!-- Second arm link -->
+  <link name="link2">
+    <visual>
+      <origin xyz="0.2 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.4 0.05 0.05"/>
+      </geometry>
+    </visual>
+  </link>
+
+  <!-- Joint 1: base to link1 -->
+  <joint name="joint1" type="revolute">
+    <parent link="base"/>
+    <child link="link1"/>
+    <origin xyz="0 0 0.1" rpy="0 0 0"/>  <!-- WHERE joint attaches -->
+    <axis xyz="0 0 1"/>  <!-- Rotates around z-axis -->
+    <limit lower="-3.14" upper="3.14"/>
+  </joint>
+  
+  <!-- Joint 2: link1 to link2 -->
+  <joint name="joint2" type="revolute">
+    <parent link="link1"/>
+    <child link="link2"/>
+    <origin xyz="0.5 0 0" rpy="0 0 0"/>  <!-- Attaches at END of link1 -->
+    <axis xyz="0 0 1"/>
+    <limit lower="-3.14" upper="3.14"/>
+  </joint>
+  
+</robot>
