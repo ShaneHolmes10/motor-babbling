@@ -41,6 +41,8 @@ class Canvas(UIElement):
         self.image.fill((255, 255, 255))
 
         if self.on_draw:
+            if not callable(self.on_draw):
+                raise TypeError("on_draw must be callable")
             self.on_draw(self.image)
 
     def process_event(self, event):
