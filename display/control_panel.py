@@ -4,9 +4,22 @@ from pygame_gui.core import UIElement
 
 
 class ControlPanel(UIElement):
-    """Control panel that manages widgets and their callbacks"""
+    """
+    Control panel that manages widgets and their callbacks.
+    Acts as a coordinator between pygame_gui widgets and application code.
+    """
 
     def __init__(self, relative_rect, manager, widgets, callbacks):
+        """
+        Initialize the control panel.
+
+        Args:
+            relative_rect: pygame.Rect defining position and size
+            manager: pygame_gui UIManager instance
+            widgets: Dict mapping widget IDs to widget instances
+            callbacks: Dict mapping callback keys to callback functions
+        """
+
         super().__init__(
             relative_rect=relative_rect,
             manager=manager,
@@ -19,7 +32,16 @@ class ControlPanel(UIElement):
         self.callbacks = callbacks
 
     def process_event(self, event):
-        """Handle widget events and fire callbacks"""
+        """
+        Handle pygame_gui widget events and fire appropriate callbacks.
+
+        Args:
+            event: pygame.event.Event to process
+
+        Returns:
+            False (events not consumed by panel itself)
+        """
+
         if event.type == pygame_gui.UI_HORIZONTAL_SLIDER_MOVED:
             for widget_id, widget in self.widgets.items():
                 if event.ui_element == widget:
@@ -37,18 +59,50 @@ class ControlPanel(UIElement):
         return False
 
     def get_widget(self, widget_id):
+        """
+        Retrieve a widget by its ID.
+
+        Args:
+            widget_id: String identifier for the widget
+
+        Returns:
+            Widget instance or None if not found
+        """
+
         return self.widgets.get(widget_id)
 
     def set_slider_value(self, slider_id, value):
+        """
+        Set a slider's value programmatically.
+
+        Args:
+            slider_id: String identifier for the slider
+            value: New value to set
+        """
+
         slider = self.widgets.get(slider_id)
         if slider:
             slider.set_current_value(value)
 
 
 class ControlPanelBuilder:
-    """Builder for creating control panels with pygame_gui elements"""
+    """
+    Builder for creating control panels with pygame_gui elements.
+    Uses fluent interface for easy panel construction.
+    """
 
     def __init__(self, x, y, width, height, manager):
+        """
+        Initialize the builder.
+
+        Args:
+            x: X position of the panel
+            y: Y position of the panel
+            width: Width of the panel
+            height: Height of the panel
+            manager: pygame_gui UIManager instance
+        """
+
         self.x = x
         self.y = y
         self.width = width
@@ -64,15 +118,32 @@ class ControlPanelBuilder:
         self.current_section = None
 
     def add_section(self, title, height):
-        """Add a titled section panel"""
+        """
+        Add a scrollable section to the control panel.
+
+        Args:
+            title: Section title (None for no title)
+            height: Height of the section in pixels
+
+        Returns:
+            self for method chaining
+        """
+
         section = pygame_gui.elements.UIScrollingContainer(
-            relative_rect=pygame.Rect(self.x, self.current_y, self.width, height),
+            # fmt: off
+            relative_rect=pygame.Rect(
+                self.x,
+                self.current_y,
+                self.width,
+                height
+            ),
+            # fmt: on
             manager=self.manager,
             starting_height=2,
         )
 
         if title:
-            title_label = pygame_gui.elements.UILabel(
+            pygame_gui.elements.UILabel(
                 relative_rect=pygame.Rect(10, 5, self.width - 20, 30),
                 text=title,
                 manager=self.manager,
@@ -89,23 +160,57 @@ class ControlPanelBuilder:
         return self
 
     def end_section(self):
-        """Finalize current section and set scrollable area"""
+        """
+        Finalize the current section and set its scrollable area size.
+        Must be called after adding widgets to a section.
+
+        Returns:
+            self for method chaining
+        """
+
         if not self.current_section:
             raise ValueError("No section to end")
 
         section = self.current_section["panel"]
-        content_height = self.current_section["current_y"] + 20  # Add bottom padding
+        content_height = self.current_section["current_y"] + 20
 
         # Tell the scrolling container how tall the content is
-        section.set_scrollable_area_dimensions((self.width - 20, content_height))
+        # fmt: off
+        section.set_scrollable_area_dimensions(
+            (self.width - 20, content_height)
+        )
+        # fmt: on
 
         self.current_section = None
         return self
 
     def add_slider(
-        self, slider_id, min_val, max_val, label=None, initial=0, on_change=None
+        # fmt: off
+        self,
+        slider_id,
+        min_val,
+        max_val,
+        label=None,
+        initial=0,
+        on_change=None
+        # fmt: on
     ):
-        """Add a slider to the current section"""
+        """
+        Add a horizontal slider to the current section.
+
+        Args:
+            slider_id: Unique identifier for this slider
+            min_val: Minimum slider value
+            max_val: Maximum slider value
+            label: Optional label text displayed above slider
+            initial: Initial slider value
+            on_change: Optional callback function(value) called when slider
+            moves
+
+        Returns:
+            self for method chaining
+        """
+
         if not self.current_section:
             raise ValueError("Must call add_section first")
 
@@ -113,7 +218,7 @@ class ControlPanelBuilder:
         y = self.current_section["current_y"]
 
         if label:
-            label_widget = pygame_gui.elements.UILabel(
+            pygame_gui.elements.UILabel(
                 relative_rect=pygame.Rect(10, y, self.width - 40, 25),
                 text=label,
                 manager=self.manager,
@@ -137,7 +242,20 @@ class ControlPanelBuilder:
         return self
 
     def add_button(self, button_id, text, on_click=None, color=None):
-        """Add a button to the current section"""
+        """
+        Add a button to the current section.
+
+        Args:
+            button_id: Unique identifier for this button
+            text: Button label text
+            on_click: Optional callback function() called when button is
+            clicked
+            color: Optional color (currently unused)
+
+        Returns:
+            self for method chaining
+        """
+
         if not self.current_section:
             raise ValueError("Must call add_section first")
 
@@ -159,7 +277,17 @@ class ControlPanelBuilder:
         return self
 
     def add_label(self, label_id, text):
-        """Add a label to the current section"""
+        """
+        Add a text label to the current section.
+
+        Args:
+            label_id: Unique identifier for this label
+            text: Label text content
+
+        Returns:
+            self for method chaining
+        """
+
         if not self.current_section:
             raise ValueError("Must call add_section first")
 
@@ -178,7 +306,18 @@ class ControlPanelBuilder:
         return self
 
     def add_text_box(self, textbox_id, html_text, height=100):
-        """Add a text box for displaying info"""
+        """
+        Add a text box for displaying formatted multi-line text.
+
+        Args:
+            textbox_id: Unique identifier for this text box
+            html_text: HTML-formatted text content
+            height: Height of the text box in pixels
+
+        Returns:
+            self for method chaining
+        """
+
         if not self.current_section:
             raise ValueError("Must call add_section first")
 
@@ -197,7 +336,20 @@ class ControlPanelBuilder:
         return self
 
     def build(self):
-        """Return the constructed control panel"""
+        """
+        Construct and return the final ControlPanel instance.
+
+        Returns:
+            ControlPanel instance with all widgets and callbacks configured
+        """
+
         panel_rect = pygame.Rect(self.x, self.y, self.width, self.height)
-        panel = ControlPanel(panel_rect, self.manager, self.widgets, self.callbacks)
+        # fmt: off
+        panel = ControlPanel(
+            panel_rect,
+            self.manager,
+            self.widgets,
+            self.callbacks
+        )
+        # fmt: on
         return panel
