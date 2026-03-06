@@ -5,8 +5,14 @@ from display.control_panel import ControlPanelBuilder
 
 
 class RobotApp:
+    """
+    Main application class for the robot arm controller.
+    Manages the GUI, robot state, and coordinates between canvas and control
+    panel.
+    """
 
     def __init__(self):
+        """Initialize the application with GUI components and initial state."""
 
         pygame.init()
 
@@ -19,18 +25,14 @@ class RobotApp:
         self.manager = pygame_gui.UIManager((WIDTH, HEIGHT))
 
         # Create canvas
-
-        # fmt: off
         self.canvas = Canvas(
             relative_rect=pygame.Rect(0, 0, 700, 700),
             manager=self.manager,
             on_draw=self.draw_scene,
-            on_click=self.handle_click
+            on_click=self.handle_click,
         )
-        # fmt: on
 
         # Build control panel using builder
-
         builder = ControlPanelBuilder(
             x=CANVAS_WIDTH,
             y=0,
@@ -85,6 +87,15 @@ class RobotApp:
 
     # Canvas callbacks
     def handle_click(self, x, y, button):
+        """
+        Handle canvas click events.
+
+        Args:
+            x: X coordinate in canvas-local space
+            y: Y coordinate in canvas-local space
+            button: Mouse button (1=left, 3=right)
+        """
+
         if button == 1:  # Left click
             self.model = [x, y]  # Add new object
             print(f"Added target at {x}, {y}")
@@ -93,6 +104,14 @@ class RobotApp:
             print("Cleared all targets")
 
     def draw_scene(self, surface):
+        """
+        Draw the robot visualization on the canvas.
+        Called by Canvas.draw_content() each frame.
+
+        Args:
+            surface: pygame.Surface to draw on
+        """
+
         surface.fill((255, 255, 255))
 
         # Draw all objects from shared state
@@ -114,19 +133,37 @@ class RobotApp:
 
     # Control panel callbacks
     def on_joint1_change(self, value):
+        """
+        Handle Joint 1 slider changes.
+
+        Args:
+            value: New slider value in degrees
+        """
+
         self.model[0] += 0.01 * value
         print(f"x component: {value:.1f}°")
 
     def on_joint2_change(self, value):
+        """
+        Handle Joint 2 slider changes.
+
+        Args:
+            value: New slider value in degrees
+        """
+
         self.model[1] += 0.01 * value
         print(f"y component: {value:.1f}°")
 
     def on_reset(self):
+        """Handle reset button click - reset all joint sliders to zero."""
+
         print("Reset!")
         self.control_panel.set_slider_value("joint1", 0)
         self.control_panel.set_slider_value("joint2", 0)
 
     def run(self):
+        """Main application loop."""
+
         clock = pygame.time.Clock()
         running = True
 
