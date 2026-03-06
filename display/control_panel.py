@@ -65,10 +65,10 @@ class ControlPanelBuilder:
 
     def add_section(self, title, height):
         """Add a titled section panel"""
-        section = pygame_gui.elements.UIPanel(
+        section = pygame_gui.elements.UIScrollingContainer(
             relative_rect=pygame.Rect(self.x, self.current_y, self.width, height),
-            starting_height=2,
             manager=self.manager,
+            starting_height=2,
         )
 
         if title:
@@ -86,6 +86,20 @@ class ControlPanelBuilder:
         }
 
         self.current_y += height + self.spacing
+        return self
+
+    def end_section(self):
+        """Finalize current section and set scrollable area"""
+        if not self.current_section:
+            raise ValueError("No section to end")
+
+        section = self.current_section["panel"]
+        content_height = self.current_section["current_y"] + 20  # Add bottom padding
+
+        # Tell the scrolling container how tall the content is
+        section.set_scrollable_area_dimensions((self.width - 20, content_height))
+
+        self.current_section = None
         return self
 
     def add_slider(
