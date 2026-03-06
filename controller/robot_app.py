@@ -6,9 +6,8 @@ from display.control_panel import ControlPanelBuilder
 
 class RobotApp:
     """
-    Main application class for the robot arm controller.
-    Manages the GUI, robot state, and coordinates between canvas and control
-    panel.
+    Demo application showing control panel and canvas interaction.
+    Controls two colored balls with sliders and displays their coordinates.
     """
 
     def __init__(self):
@@ -24,15 +23,22 @@ class RobotApp:
         self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
         self.manager = pygame_gui.UIManager((WIDTH, HEIGHT))
 
-        # Create canvas
+        # Ball positions (start in center of canvas)
+        self.red_ball = [350, 350]
+        self.green_ball = [350, 350]
+
+        # Click markers
+        self.click_markers = []
+
+        # Create canvas element for visualization
         self.canvas = Canvas(
-            relative_rect=pygame.Rect(0, 0, 700, 700),
+            relative_rect=pygame.Rect(0, 0, CANVAS_WIDTH, HEIGHT),
             manager=self.manager,
             on_draw=self.draw_scene,
             on_click=self.handle_click,
         )
 
-        # Build control panel using builder
+        # Build control panel using builder pattern
         builder = ControlPanelBuilder(
             x=CANVAS_WIDTH,
             y=0,
@@ -42,50 +48,55 @@ class RobotApp:
         )
 
         self.control_panel = (
-            builder.add_section("Joint Controls", height=200)
+            builder.add_section("Red Ball Controls", height=220)
             .add_slider(
-                "joint1",
-                -180,
-                180,
-                label="Joint 1",
-                initial=0,
-                on_change=self.on_joint1_change,
+                "red_x",
+                0,
+                700,
+                label="Red X",
+                initial=350,
+                on_change=self.on_red_x_change,
             )
             .add_slider(
-                "joint2",
-                -180,
-                180,
-                label="Joint 2",
-                initial=0,
-                on_change=self.on_joint2_change,
+                "red_y",
+                0,
+                700,
+                label="Red Y",
+                initial=350,
+                on_change=self.on_red_y_change,
             )
-            .add_slider(
-                "joint3",
-                -180,
-                180,
-                label="Joint 3",
-                initial=0,
-                on_change=self.on_joint2_change,
-            )
-            .add_slider(
-                "joint4",
-                -180,
-                180,
-                label="Joint 4",
-                initial=0,
-                on_change=self.on_joint2_change,
-            )
+            .add_label("red_pos", "Red: (350, 350)")
             .end_section()
-            .add_section("Actions", height=120)
-            .add_button("reset", "Reset to Home", on_click=self.on_reset)
+            .add_section("Green Ball Controls", height=220)
+            .add_slider(
+                "green_x",
+                0,
+                700,
+                label="Green X",
+                initial=350,
+                on_change=self.on_green_x_change,
+            )
+            .add_slider(
+                "green_y",
+                0,
+                700,
+                label="Green Y",
+                initial=350,
+                on_change=self.on_green_y_change,
+            )
+            .add_label("green_pos", "Green: (350, 350)")
+            .end_section()
+            .add_section("Actions", height=200)
+            .add_button("reset", "Reset to Center", on_click=self.on_reset)
+            .add_button(
+                "clear_markers",
+                "Clear Markers",
+                on_click=self.on_clear_markers,
+            )
             .end_section()
             .build()
         )
 
-        # Robot state
-        self.model = [0, 0]
-
-    # Canvas callbacks
     def handle_click(self, x, y, button):
         """
         Handle canvas click events.
@@ -95,75 +106,94 @@ class RobotApp:
             y: Y coordinate in canvas-local space
             button: Mouse button (1=left, 3=right)
         """
-
-        if button == 1:  # Left click
-            self.model = [x, y]  # Add new object
-            print(f"Added target at {x}, {y}")
-        elif button == 3:  # Right click
-            self.model = [0, 0]  # Clear all objects
-            print("Cleared all targets")
+        if button == 1:
+            self.click_markers.append((x, y))
+            print(f"Added click marker at ({x}, {y})")
 
     def draw_scene(self, surface):
         """
-        Draw the robot visualization on the canvas.
-        Called by Canvas.draw_content() each frame.
+        Draw the visualization on the canvas.
 
         Args:
             surface: pygame.Surface to draw on
         """
-
         surface.fill((255, 255, 255))
 
-        # Draw all objects from shared state
-        pygame.draw.circle(surface, (255, 0, 0), self.model, 10)
-        pygame.draw.line(
-            surface,
-            (255, 0, 0),
-            (self.model[0] - 15, self.model[1]),
-            (self.model[0] + 15, self.model[1]),
-            2,
-        )
-        pygame.draw.line(
-            surface,
-            (255, 0, 0),
-            (self.model[0], self.model[1] - 15),
-            (self.model[0], self.model[1] + 15),
-            2,
-        )
+        # Draw grid
+        gray = (200, 200, 200)
+        for i in range(0, 700, 50):
+            pygame.draw.line(surface, gray, (i, 0), (i, 700), 1)
+            pygame.draw.line(surface, gray, (0, i), (700, i), 1)
 
-    # Control panel callbacks
-    def on_joint1_change(self, value):
-        """
-        Handle Joint 1 slider changes.
+        # Draw red ball
+        pygame.draw.circle(surface, (255, 0, 0), self.red_ball, 20)
 
-        Args:
-            value: New slider value in degrees
-        """
+        # Draw green ball
+        pygame.draw.circle(surface, (0, 255, 0), self.green_ball, 20)
 
-        self.model[0] += 0.01 * value
-        print(f"x component: {value:.1f}°")
+        # Draw click markers (small blue dots)
+        for marker in self.click_markers:
+            pygame.draw.circle(surface, (0, 0, 255), marker, 5)
 
-    def on_joint2_change(self, value):
-        """
-        Handle Joint 2 slider changes.
+    def on_red_x_change(self, value):
+        """Update red ball X position and label."""
+        self.red_ball[0] = int(value)
+        self._update_red_label()
 
-        Args:
-            value: New slider value in degrees
-        """
+    def on_red_y_change(self, value):
+        """Update red ball Y position and label."""
+        self.red_ball[1] = int(value)
+        self._update_red_label()
 
-        self.model[1] += 0.01 * value
-        print(f"y component: {value:.1f}°")
+    def on_green_x_change(self, value):
+        """Update green ball X position and label."""
+        self.green_ball[0] = int(value)
+        self._update_green_label()
+
+    def on_green_y_change(self, value):
+        """Update green ball Y position and label."""
+        self.green_ball[1] = int(value)
+        self._update_green_label()
+
+    def _update_red_label(self):
+        """Update the red ball position label."""
+        label = self.control_panel.get_widget("red_pos")
+        if label:
+            label.set_text(f"Red: ({self.red_ball[0]}, {self.red_ball[1]})")
+
+    def _update_green_label(self):
+        """Update the green ball position label."""
+        label = self.control_panel.get_widget("green_pos")
+        if label:
+            label.set_text(
+                f"Green: ({self.green_ball[0]}, {self.green_ball[1]})"
+            )
 
     def on_reset(self):
-        """Handle reset button click - reset all joint sliders to zero."""
+        """Reset both balls and all sliders to center position."""
+        print("Reset to center!")
 
-        print("Reset!")
-        self.control_panel.set_slider_value("joint1", 0)
-        self.control_panel.set_slider_value("joint2", 0)
+        # Reset sliders
+        self.control_panel.set_slider_value("red_x", 350)
+        self.control_panel.set_slider_value("red_y", 350)
+        self.control_panel.set_slider_value("green_x", 350)
+        self.control_panel.set_slider_value("green_y", 350)
+
+        # Reset ball positions
+        self.red_ball = [350, 350]
+        self.green_ball = [350, 350]
+
+        # Update labels
+        self._update_red_label()
+        self._update_green_label()
+
+    def on_clear_markers(self):
+        """Clear all click markers from canvas."""
+        print("Cleared markers!")
+        self.click_markers.clear()
 
     def run(self):
         """Main application loop."""
-
         clock = pygame.time.Clock()
         running = True
 
