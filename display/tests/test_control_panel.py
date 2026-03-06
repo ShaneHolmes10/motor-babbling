@@ -34,7 +34,9 @@ class TestControlPanelBuilder:
         assert len(builder.callbacks) == 0
 
     def test_add_section(self, manager):
-        builder = ControlPanelBuilder(x=0, y=0, width=300, height=700, manager=manager)
+        builder = ControlPanelBuilder(
+            x=0, y=0, width=300, height=700, manager=manager
+        )
         result = builder.add_section("Test Section", height=200)
 
         assert result is builder
@@ -42,19 +44,25 @@ class TestControlPanelBuilder:
         assert builder.current_section["current_y"] == 40
 
     def test_add_section_without_title(self, manager):
-        builder = ControlPanelBuilder(x=0, y=0, width=300, height=700, manager=manager)
+        builder = ControlPanelBuilder(
+            x=0, y=0, width=300, height=700, manager=manager
+        )
         builder.add_section(None, height=200)
 
         assert builder.current_section["current_y"] == 10
 
     def test_add_slider_requires_section(self, manager):
-        builder = ControlPanelBuilder(x=0, y=0, width=300, height=700, manager=manager)
+        builder = ControlPanelBuilder(
+            x=0, y=0, width=300, height=700, manager=manager
+        )
 
         with pytest.raises(ValueError, match="Must call add_section first"):
             builder.add_slider("joint1", -180, 180)
 
     def test_add_slider(self, manager):
-        builder = ControlPanelBuilder(x=0, y=0, width=300, height=700, manager=manager)
+        builder = ControlPanelBuilder(
+            x=0, y=0, width=300, height=700, manager=manager
+        )
         result = builder.add_section("Joints", height=200).add_slider(
             "joint1", -180, 180, label="Joint 1", initial=0
         )
@@ -71,7 +79,9 @@ class TestControlPanelBuilder:
         def on_change(value):
             called.append(value)
 
-        builder = ControlPanelBuilder(x=0, y=0, width=300, height=700, manager=manager)
+        builder = ControlPanelBuilder(
+            x=0, y=0, width=300, height=700, manager=manager
+        )
         builder.add_section("Joints", height=200)
         builder.add_slider("joint1", -180, 180, on_change=on_change)
 
@@ -79,20 +89,26 @@ class TestControlPanelBuilder:
         assert builder.callbacks["joint1_change"] == on_change
 
     def test_add_button_requires_section(self, manager):
-        builder = ControlPanelBuilder(x=0, y=0, width=300, height=700, manager=manager)
+        builder = ControlPanelBuilder(
+            x=0, y=0, width=300, height=700, manager=manager
+        )
 
         with pytest.raises(ValueError, match="Must call add_section first"):
             builder.add_button("reset", "Reset")
 
     def test_add_button(self, manager):
-        builder = ControlPanelBuilder(x=0, y=0, width=300, height=700, manager=manager)
+        builder = ControlPanelBuilder(
+            x=0, y=0, width=300, height=700, manager=manager
+        )
         result = builder.add_section("Actions", height=150).add_button(
             "reset", "Reset to Home"
         )
 
         assert result is builder
         assert "reset" in builder.widgets
-        assert isinstance(builder.widgets["reset"], pygame_gui.elements.UIButton)
+        assert isinstance(
+            builder.widgets["reset"], pygame_gui.elements.UIButton
+        )
 
     def test_add_button_with_callback(self, manager):
         called = []
@@ -100,7 +116,9 @@ class TestControlPanelBuilder:
         def on_click():
             called.append(True)
 
-        builder = ControlPanelBuilder(x=0, y=0, width=300, height=700, manager=manager)
+        builder = ControlPanelBuilder(
+            x=0, y=0, width=300, height=700, manager=manager
+        )
         builder.add_section("Actions", height=150)
         builder.add_button("reset", "Reset", on_click=on_click)
 
@@ -108,14 +126,20 @@ class TestControlPanelBuilder:
         assert builder.callbacks["reset_click"] == on_click
 
     def test_add_label(self, manager):
-        builder = ControlPanelBuilder(x=0, y=0, width=300, height=700, manager=manager)
-        result = builder.add_section("Info", height=100).add_label("status", "Ready")
+        builder = ControlPanelBuilder(
+            x=0, y=0, width=300, height=700, manager=manager
+        )
+        result = builder.add_section("Info", height=100).add_label(
+            "status", "Ready"
+        )
 
         assert result is builder
         assert "status" in builder.widgets
 
     def test_add_text_box(self, manager):
-        builder = ControlPanelBuilder(x=0, y=0, width=300, height=700, manager=manager)
+        builder = ControlPanelBuilder(
+            x=0, y=0, width=300, height=700, manager=manager
+        )
         result = builder.add_section("Info", height=150).add_text_box(
             "details", "<b>Info:</b><br>Text here", height=80
         )
@@ -124,20 +148,26 @@ class TestControlPanelBuilder:
         assert "details" in builder.widgets
 
     def test_end_section_requires_active_section(self, manager):
-        builder = ControlPanelBuilder(x=0, y=0, width=300, height=700, manager=manager)
+        builder = ControlPanelBuilder(
+            x=0, y=0, width=300, height=700, manager=manager
+        )
 
         with pytest.raises(ValueError, match="No section to end"):
             builder.end_section()
 
     def test_end_section_clears_current_section(self, manager):
-        builder = ControlPanelBuilder(x=0, y=0, width=300, height=700, manager=manager)
+        builder = ControlPanelBuilder(
+            x=0, y=0, width=300, height=700, manager=manager
+        )
         builder.add_section("Test", height=200)
         builder.end_section()
 
         assert builder.current_section is None
 
     def test_method_chaining(self, manager):
-        builder = ControlPanelBuilder(x=0, y=0, width=300, height=700, manager=manager)
+        builder = ControlPanelBuilder(
+            x=0, y=0, width=300, height=700, manager=manager
+        )
 
         result = (
             builder.add_section("Joints", height=200)
@@ -202,7 +232,9 @@ class TestControlPanel:
         assert panel.callbacks == callbacks
 
     def test_get_widget(self, manager):
-        builder = ControlPanelBuilder(x=0, y=0, width=300, height=700, manager=manager)
+        builder = ControlPanelBuilder(
+            x=0, y=0, width=300, height=700, manager=manager
+        )
         panel = (
             builder.add_section("Test", height=100)
             .add_slider("joint1", 0, 100)
@@ -215,14 +247,18 @@ class TestControlPanel:
         assert slider == panel.widgets["joint1"]
 
     def test_get_nonexistent_widget(self, manager):
-        builder = ControlPanelBuilder(x=0, y=0, width=300, height=700, manager=manager)
+        builder = ControlPanelBuilder(
+            x=0, y=0, width=300, height=700, manager=manager
+        )
         panel = builder.add_section("Test", 100).end_section().build()
 
         widget = panel.get_widget("nonexistent")
         assert widget is None
 
     def test_set_slider_value(self, manager):
-        builder = ControlPanelBuilder(x=0, y=0, width=300, height=700, manager=manager)
+        builder = ControlPanelBuilder(
+            x=0, y=0, width=300, height=700, manager=manager
+        )
         panel = (
             builder.add_section("Test", height=100)
             .add_slider("joint1", -180, 180, initial=0)
@@ -236,7 +272,9 @@ class TestControlPanel:
         assert slider.get_current_value() == 90
 
     def test_set_nonexistent_slider_doesnt_crash(self, manager):
-        builder = ControlPanelBuilder(x=0, y=0, width=300, height=700, manager=manager)
+        builder = ControlPanelBuilder(
+            x=0, y=0, width=300, height=700, manager=manager
+        )
         panel = builder.add_section("Test", 100).end_section().build()
 
         panel.set_slider_value("nonexistent", 50)
@@ -247,7 +285,9 @@ class TestControlPanel:
         def on_change(value):
             called_values.append(value)
 
-        builder = ControlPanelBuilder(x=0, y=0, width=300, height=700, manager=manager)
+        builder = ControlPanelBuilder(
+            x=0, y=0, width=300, height=700, manager=manager
+        )
         panel = (
             builder.add_section("Test", height=100)
             .add_slider("joint1", 0, 100, on_change=on_change)
@@ -270,7 +310,9 @@ class TestControlPanel:
         def on_click():
             called.append(True)
 
-        builder = ControlPanelBuilder(x=0, y=0, width=300, height=700, manager=manager)
+        builder = ControlPanelBuilder(
+            x=0, y=0, width=300, height=700, manager=manager
+        )
         panel = (
             builder.add_section("Actions", height=100)
             .add_button("reset", "Reset", on_click=on_click)
@@ -279,14 +321,18 @@ class TestControlPanel:
         )
 
         button = panel.get_widget("reset")
-        event = pygame.event.Event(pygame_gui.UI_BUTTON_PRESSED, ui_element=button)
+        event = pygame.event.Event(
+            pygame_gui.UI_BUTTON_PRESSED, ui_element=button
+        )
 
         panel.process_event(event)
 
         assert len(called) == 1
 
     def test_event_without_callback_doesnt_crash(self, manager):
-        builder = ControlPanelBuilder(x=0, y=0, width=300, height=700, manager=manager)
+        builder = ControlPanelBuilder(
+            x=0, y=0, width=300, height=700, manager=manager
+        )
         panel = (
             builder.add_section("Test", height=100)
             .add_slider("joint1", 0, 100)
@@ -310,7 +356,9 @@ class TestControlPanel:
         def on_j2_change(value):
             values["j2"] = value
 
-        builder = ControlPanelBuilder(x=0, y=0, width=300, height=700, manager=manager)
+        builder = ControlPanelBuilder(
+            x=0, y=0, width=300, height=700, manager=manager
+        )
         panel = (
             builder.add_section("Joints", height=200)
             .add_slider("joint1", -180, 180, on_change=on_j1_change)

@@ -1,7 +1,7 @@
 import pygame
 import pygame_gui
 from display.canvas import Canvas
-from display.control_panel import ControlPanel, ControlPanelBuilder
+from display.control_panel import ControlPanelBuilder
 
 
 class RobotApp:
@@ -32,7 +32,11 @@ class RobotApp:
         # Build control panel using builder
 
         builder = ControlPanelBuilder(
-            x=CANVAS_WIDTH, y=0, width=PANEL_WIDTH, height=HEIGHT, manager=self.manager
+            x=CANVAS_WIDTH,
+            y=0,
+            width=PANEL_WIDTH,
+            height=HEIGHT,
+            manager=self.manager,
         )
 
         self.control_panel = (

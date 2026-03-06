@@ -1,4 +1,3 @@
-
 import pygame
 from pygame_gui.core import UIElement
 
@@ -20,16 +19,13 @@ class Canvas(UIElement):
             on_click: Optional callback function(x, y, button) for click
             handling
         """
-
-        # fmt: off
         super().__init__(
             relative_rect=relative_rect,
             manager=manager,
             container=None,
             starting_height=1,
-            layer_thickness=1
+            layer_thickness=1,
         )
-        # fmt: on
 
         self.image = pygame.Surface(relative_rect.size)
         self.rect = relative_rect

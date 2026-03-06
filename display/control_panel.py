@@ -130,14 +130,9 @@ class ControlPanelBuilder:
         """
 
         section = pygame_gui.elements.UIScrollingContainer(
-            # fmt: off
             relative_rect=pygame.Rect(
-                self.x,
-                self.current_y,
-                self.width,
-                height
+                self.x, self.current_y, self.width, height
             ),
-            # fmt: on
             manager=self.manager,
             starting_height=2,
         )
@@ -175,25 +170,22 @@ class ControlPanelBuilder:
         content_height = self.current_section["current_y"] + 20
 
         # Tell the scrolling container how tall the content is
-        # fmt: off
+
         section.set_scrollable_area_dimensions(
             (self.width - 20, content_height)
         )
-        # fmt: on
 
         self.current_section = None
         return self
 
     def add_slider(
-        # fmt: off
         self,
         slider_id,
         min_val,
         max_val,
         label=None,
         initial=0,
-        on_change=None
-        # fmt: on
+        on_change=None,
     ):
         """
         Add a horizontal slider to the current section.
@@ -344,12 +336,7 @@ class ControlPanelBuilder:
         """
 
         panel_rect = pygame.Rect(self.x, self.y, self.width, self.height)
-        # fmt: off
         panel = ControlPanel(
-            panel_rect,
-            self.manager,
-            self.widgets,
-            self.callbacks
+            panel_rect, self.manager, self.widgets, self.callbacks
         )
-        # fmt: on
         return panel

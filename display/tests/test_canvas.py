@@ -20,7 +20,10 @@ def manager(pygame_setup):
 class TestCanvas:
 
     def test_canvas_initialization(self, manager):
-        canvas = Canvas(relative_rect=pygame.Rect(0, 0, 700, 700), manager=manager)
+
+        canvas = Canvas(
+            relative_rect=pygame.Rect(0, 0, 700, 700), manager=manager
+        )
 
         assert canvas.rect.x == 0
         assert canvas.rect.y == 0
@@ -48,7 +51,10 @@ class TestCanvas:
         assert canvas.on_click == click_func
 
     def test_draw_content_clears_to_white(self, manager):
-        canvas = Canvas(relative_rect=pygame.Rect(0, 0, 100, 100), manager=manager)
+
+        canvas = Canvas(
+            relative_rect=pygame.Rect(0, 0, 100, 100), manager=manager
+        )
 
         canvas.draw_content()
 
@@ -73,7 +79,10 @@ class TestCanvas:
         assert len(called) == 1
 
     def test_draw_content_without_callback(self, manager):
-        canvas = Canvas(relative_rect=pygame.Rect(0, 0, 200, 200), manager=manager)
+
+        canvas = Canvas(
+            relative_rect=pygame.Rect(0, 0, 200, 200), manager=manager
+        )
 
         canvas.draw_content()
 
@@ -89,7 +98,9 @@ class TestCanvas:
             on_click=click_func,
         )
 
-        event = pygame.event.Event(pygame.MOUSEBUTTONDOWN, pos=(200, 100), button=1)
+        event = pygame.event.Event(
+            pygame.MOUSEBUTTONDOWN, pos=(200, 100), button=1
+        )
 
         result = canvas.process_event(event)
 
@@ -109,7 +120,9 @@ class TestCanvas:
             on_click=click_func,
         )
 
-        event = pygame.event.Event(pygame.MOUSEBUTTONDOWN, pos=(50, 50), button=1)
+        event = pygame.event.Event(
+            pygame.MOUSEBUTTONDOWN, pos=(50, 50), button=1
+        )
 
         result = canvas.process_event(event)
 
@@ -128,7 +141,9 @@ class TestCanvas:
             on_click=click_func,
         )
 
-        event = pygame.event.Event(pygame.MOUSEBUTTONDOWN, pos=(250, 200), button=1)
+        event = pygame.event.Event(
+            pygame.MOUSEBUTTONDOWN, pos=(250, 200), button=1
+        )
 
         canvas.process_event(event)
 
@@ -147,7 +162,9 @@ class TestCanvas:
             on_click=click_func,
         )
 
-        event = pygame.event.Event(pygame.MOUSEBUTTONDOWN, pos=(100, 100), button=1)
+        event = pygame.event.Event(
+            pygame.MOUSEBUTTONDOWN, pos=(100, 100), button=1
+        )
 
         canvas.process_event(event)
 
@@ -165,23 +182,33 @@ class TestCanvas:
             on_click=click_func,
         )
 
-        event = pygame.event.Event(pygame.MOUSEBUTTONDOWN, pos=(100, 100), button=3)
+        event = pygame.event.Event(
+            pygame.MOUSEBUTTONDOWN, pos=(100, 100), button=3
+        )
 
         canvas.process_event(event)
 
         assert click_data[0] == 3
 
     def test_click_without_callback_doesnt_crash(self, manager):
-        canvas = Canvas(relative_rect=pygame.Rect(0, 0, 500, 500), manager=manager)
 
-        event = pygame.event.Event(pygame.MOUSEBUTTONDOWN, pos=(100, 100), button=1)
+        canvas = Canvas(
+            relative_rect=pygame.Rect(0, 0, 500, 500), manager=manager
+        )
+
+        event = pygame.event.Event(
+            pygame.MOUSEBUTTONDOWN, pos=(100, 100), button=1
+        )
 
         result = canvas.process_event(event)
 
         assert result is True
 
     def test_non_click_event_returns_false(self, manager):
-        canvas = Canvas(relative_rect=pygame.Rect(0, 0, 500, 500), manager=manager)
+
+        canvas = Canvas(
+            relative_rect=pygame.Rect(0, 0, 500, 500), manager=manager
+        )
 
         event = pygame.event.Event(pygame.MOUSEMOTION, pos=(100, 100))
 
@@ -190,7 +217,9 @@ class TestCanvas:
         assert result is False
 
     def test_canvas_image_size_matches_rect(self, manager):
-        canvas = Canvas(relative_rect=pygame.Rect(0, 0, 640, 480), manager=manager)
+        canvas = Canvas(
+            relative_rect=pygame.Rect(0, 0, 640, 480), manager=manager
+        )
 
         assert canvas.image.get_width() == 640
         assert canvas.image.get_height() == 480
