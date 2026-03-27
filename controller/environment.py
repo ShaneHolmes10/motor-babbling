@@ -61,7 +61,7 @@ class TwoDOFReachingEnv(gym.Env):
 
         # Action space: 9 discrete actions (quantized control range)
 
-        self.quantize_level = 3
+        self.quantize_level = 5
         self.torque_values = np.linspace(
             -1.0, 1.0, self.quantize_level
         ) 
