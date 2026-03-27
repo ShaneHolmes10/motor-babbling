@@ -133,6 +133,12 @@ def train(args):
         device="cpu",
     )
 
+    if args.resume and os.path.exists(args.save_path):
+        print(f"Resuming from checkpoint: {args.save_path}")
+        agent.load(args.save_path)
+    elif args.resume:
+        print(f"Warning: --resume specified but no checkpoint found at {args.save_path}")
+
     # Training metrics
     episode_rewards = []
     episode_lengths = []
@@ -334,8 +340,8 @@ def evaluate(args):
     env.close()
 
 
-num_episodes = 100
-decay_rate = 0.995
+num_episodes = 10000
+decay_rate = 0.99999
 
 
 def main():
@@ -351,7 +357,7 @@ def main():
         help="Number of training episodes",
     )
     train_parser.add_argument(
-        "--max-steps", type=int, default=500, help="Max steps per episode"
+        "--max-steps", type=int, default=200, help="Max steps per episode"
     )
     train_parser.add_argument(
         "--lr", type=float, default=1e-3, help="Learning rate"
@@ -403,7 +409,13 @@ def main():
     train_parser.add_argument(
         "--gui", action="store_true", help="Show GUI during training"
     )
+    train_parser.add_argument(
+        "--resume", action="store_true", help="Resume training from checkpoint"
+    )
 
+    #
+    #
+    #
     # Evaluation arguments
     eval_parser = subparsers.add_parser("eval", help="Evaluate the agent")
     eval_parser.add_argument(
