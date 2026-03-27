@@ -235,7 +235,7 @@ def train(args):
         if viewer is not None:
             viewer.close()
         env.close()
-        
+
     # Generate plots
     print("Generating training plots...")
     plot_training_results(episode_rewards, losses, epsilons, args.save_path)
@@ -334,8 +334,8 @@ def evaluate(args):
     env.close()
 
 
-num_episodes = 1000
-decay_rate = 0.99999
+num_episodes = 100
+decay_rate = 0.995
 
 
 def main():
