@@ -223,6 +223,8 @@ def evaluate(args):
 
     env.close()
 
+num_episodes = 1000
+decay_rate = 0.995
 
 def main():
     parser = argparse.ArgumentParser(description="DQN for 2DOF Robot Arm")
@@ -233,7 +235,7 @@ def main():
     train_parser.add_argument(
         "--episodes",
         type=int,
-        default=1000,
+        default=num_episodes,
         help="Number of training episodes",
     )
     train_parser.add_argument(
@@ -252,7 +254,7 @@ def main():
         "--epsilon-end", type=float, default=0.01, help="Final epsilon"
     )
     train_parser.add_argument(
-        "--epsilon-decay", type=float, default=0.995, help="Epsilon decay rate"
+        "--epsilon-decay", type=float, default=decay_rate, help="Epsilon decay rate"
     )
     train_parser.add_argument(
         "--buffer-size", type=int, default=10000, help="Replay buffer size"
@@ -269,7 +271,7 @@ def main():
     train_parser.add_argument(
         "--save-path",
         type=str,
-        default="checkpoints/dqn_robot.pth",
+        default="data/checkpoints/dqn_robot.pth",
         help="Path to save model",
     )
     train_parser.add_argument(
@@ -292,7 +294,7 @@ def main():
     eval_parser.add_argument(
         "--load-path",
         type=str,
-        default="checkpoints/dqn_robot.pth",
+        default="data/checkpoints/dqn_robot.pth",
         help="Path to load model",
     )
     eval_parser.add_argument(
