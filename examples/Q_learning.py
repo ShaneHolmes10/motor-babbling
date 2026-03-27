@@ -224,7 +224,7 @@ def evaluate(args):
     env.close()
 
 num_episodes = 1000
-decay_rate = 0.995
+decay_rate = 0.99999
 
 def main():
     parser = argparse.ArgumentParser(description="DQN for 2DOF Robot Arm")
