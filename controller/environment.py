@@ -60,8 +60,8 @@ class TwoDOFReachingEnv(gym.Env):
         self.data = mujoco.MjData(self.model)
 
         # Action space: 9 discrete actions (quantized control range)
-        self.action_space = spaces.Discrete(9)
-        self.torque_values = [-10.0, 0.0, 10.0]
+        self.action_space = spaces.Discrete(100)  # 10x10 = 100
+        self.torque_values = np.linspace(-1.0, 1.0, 10)  # 10 levels from -1 to 1
 
         # Observation: [q1, q2, qd1, qd2, qacc1, qacc2, ee_x, ee_z, target_x, target_z]
         self.observation_space = spaces.Box(
