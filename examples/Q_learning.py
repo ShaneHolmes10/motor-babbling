@@ -5,7 +5,110 @@ import time
 import mujoco
 import mujoco.viewer
 from controller.environment import TwoDOFReachingEnv
+import matplotlib.pyplot as plt
 from model.dqn_agent import DQNAgent
+
+
+def plot_training_results(episode_rewards, losses, epsilons, model_path):
+    """
+    Generate and save training plots.
+
+    Args:
+        episode_rewards: List of rewards per episode
+        losses: List of average loss per episode
+        epsilons: List of epsilon values per episode
+        model_path: Path where model was saved (used to determine plot save location)
+    """
+    # Save plots in data/plots directory
+    plot_dir = "data/plots"
+    os.makedirs(plot_dir, exist_ok=True)
+
+    # Generate filename from model path
+    plot_prefix = os.path.splitext(os.path.basename(model_path))[0]
+
+    # Create figure with subplots
+    fig, axes = plt.subplots(3, 1, figsize=(10, 12))
+
+    # Plot 1: Episode Rewards - connected scatter plot
+    axes[0].scatter(
+        range(len(episode_rewards)),
+        episode_rewards,
+        alpha=0.4,
+        s=10,
+        label="Episode Reward",
+    )
+    axes[0].plot(episode_rewards, alpha=0.3, linewidth=0.5)  # Connect the dots
+    # Add moving average
+    window = min(50, len(episode_rewards) // 10)
+    if window > 0:
+        moving_avg = np.convolve(
+            episode_rewards, np.ones(window) / window, mode="valid"
+        )
+        axes[0].plot(
+            range(window - 1, len(episode_rewards)),
+            moving_avg,
+            color="red",
+            linewidth=2,
+            label=f"{window}-Episode Moving Avg",
+        )
+    axes[0].set_xlabel("Episode")
+    axes[0].set_ylabel("Total Reward")
+    axes[0].set_title("Training Rewards over Episodes")
+    axes[0].legend()
+    axes[0].grid(True, alpha=0.3)
+
+    # Plot 2: Loss
+    axes[1].plot(losses, alpha=0.6, label="Loss")
+    # Add moving average
+    if window > 0 and len(losses) > window:
+        moving_avg_loss = np.convolve(
+            losses, np.ones(window) / window, mode="valid"
+        )
+        axes[1].plot(
+            range(window - 1, len(losses)),
+            moving_avg_loss,
+            color="red",
+            linewidth=2,
+            label=f"{window}-Episode Moving Avg",
+        )
+    axes[1].set_xlabel("Episode")
+    axes[1].set_ylabel("Average Loss")
+    axes[1].set_title("Training Loss over Episodes")
+    axes[1].legend()
+    axes[1].grid(True, alpha=0.3)
+
+    # Plot 3: Epsilon (exploration rate)
+    axes[2].plot(epsilons, color="green", label="Epsilon")
+    axes[2].set_xlabel("Episode")
+    axes[2].set_ylabel("Epsilon")
+    axes[2].set_title("Exploration Rate (Epsilon) over Episodes")
+    axes[2].legend()
+    axes[2].grid(True, alpha=0.3)
+
+    plt.tight_layout()
+
+    # Save plot
+    plot_path = os.path.join(plot_dir, f"{plot_prefix}_training.png")
+    plt.savefig(plot_path, dpi=150)
+    print(f"Training plots saved to {plot_path}")
+
+    # Also save a high-res version
+    plot_path_hires = os.path.join(
+        plot_dir, f"{plot_prefix}_training_hires.png"
+    )
+    plt.savefig(plot_path_hires, dpi=300)
+
+    plt.close()
+
+    # Save raw data as well
+    data_path = os.path.join(plot_dir, f"{plot_prefix}_training_data.npz")
+    np.savez(
+        data_path,
+        episode_rewards=episode_rewards,
+        losses=losses,
+        epsilons=epsilons,
+    )
+    print(f"Training data saved to {data_path}")
 
 
 def train(args):
@@ -59,6 +162,7 @@ def train(args):
             )
             episode_reward = 0
             episode_loss = []
+            epsilons = []
 
             for step in range(args.max_steps):
                 # Select action (exploration + exploitation)
@@ -94,6 +198,7 @@ def train(args):
 
             # Record metrics
             episode_rewards.append(episode_reward)
+            epsilons.append(agent.epsilon)
             episode_lengths.append(step + 1)
             if episode_loss:
                 losses.append(np.mean(episode_loss))
@@ -129,6 +234,10 @@ def train(args):
         if viewer is not None:
             viewer.close()
         env.close()
+        
+    # Generate plots
+    print("Generating training plots...")
+    plot_training_results(episode_rewards, losses, epsilons, args.save_path)
 
 
 def evaluate(args):
@@ -223,8 +332,10 @@ def evaluate(args):
 
     env.close()
 
+
 num_episodes = 1000
 decay_rate = 0.99999
+
 
 def main():
     parser = argparse.ArgumentParser(description="DQN for 2DOF Robot Arm")
@@ -254,7 +365,10 @@ def main():
         "--epsilon-end", type=float, default=0.01, help="Final epsilon"
     )
     train_parser.add_argument(
-        "--epsilon-decay", type=float, default=decay_rate, help="Epsilon decay rate"
+        "--epsilon-decay",
+        type=float,
+        default=decay_rate,
+        help="Epsilon decay rate",
     )
     train_parser.add_argument(
         "--buffer-size", type=int, default=10000, help="Replay buffer size"
