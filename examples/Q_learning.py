@@ -3,6 +3,7 @@ import torch
 import numpy as np
 import time
 import mujoco
+import os
 import mujoco.viewer
 from controller.environment import TwoDOFReachingEnv
 import matplotlib.pyplot as plt
@@ -135,6 +136,7 @@ def train(args):
     # Training metrics
     episode_rewards = []
     episode_lengths = []
+    epsilons = []
     losses = []
 
     print("Starting training...")
@@ -162,7 +164,6 @@ def train(args):
             )
             episode_reward = 0
             episode_loss = []
-            epsilons = []
 
             for step in range(args.max_steps):
                 # Select action (exploration + exploitation)
