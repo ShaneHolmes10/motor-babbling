@@ -41,6 +41,12 @@ class TwoDOFReachingEnv(gym.Env):
                 </body>
               </body>
             </body>
+            
+             <!-- Target visualization (mocap body can be moved) -->
+            <body name="target" mocap="true" pos="0.5 0 1.0">
+              <geom type="sphere" size="0.03" rgba="1 0 0 0.5" contype="0" conaffinity="0"/>
+            </body>
+            
           </worldbody>
 
           <actuator>
@@ -91,6 +97,13 @@ class TwoDOFReachingEnv(gym.Env):
                 [radius * np.sin(angle), 1.5 - radius * np.cos(angle)]
             )
 
+        # Update target visualization position
+        self.data.mocap_pos[self.target_mocap_id] = [
+            self.target[0],
+            0,
+            self.target[1],
+        ]
+
         # Step forward to stabilize
         mujoco.mj_forward(self.model, self.data)
 
@@ -110,6 +123,13 @@ class TwoDOFReachingEnv(gym.Env):
 
         # Step simulation
         mujoco.mj_step(self.model, self.data)
+
+        # Keep target visualization in sync
+        self.data.mocap_pos[self.target_mocap_id] = [
+            self.target[0],
+            0,
+            self.target[1],
+        ]
 
         # Get observation
         obs = self._get_obs()
