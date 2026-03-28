@@ -7,7 +7,7 @@ import mujoco.viewer
 
 class TwoDOFReachingEnv(gym.Env):
 
-    def __init__(self, num_links=2):
+    def __init__(self, num_links=2, action_quantization=5):
         super().__init__()
 
         self.num_links = num_links
@@ -20,7 +20,7 @@ class TwoDOFReachingEnv(gym.Env):
         self.model = mujoco.MjModel.from_xml_string(xml)
         self.data = mujoco.MjData(self.model)
 
-        self.quantize_level = 5
+        self.quantize_level = action_quantization
         self.torque_values = np.linspace(-1.0, 1.0, self.quantize_level)
         self.action_space = spaces.Discrete(
             (self.quantize_level) ** self.num_links
