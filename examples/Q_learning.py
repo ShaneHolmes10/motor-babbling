@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 from model.dqn_agent import DQNAgent
 
 num_links = 1
-action_quantization = 5
+action_quantization = 10
 num_episodes = 1000
 decay_rate = 0.99999
 
