@@ -36,7 +36,7 @@ class TwoDOFReachingEnv(gym.Env):
         )
 
         # Target position
-        self.target = np.array([0.3, 1.2])  # [x, z] in world frame
+        self.target = np.array([0.410, 1.213])  # [x, z] in world frame
 
         self.target_mocap_id = self.model.body("target").mocapid[0]
 
@@ -199,8 +199,10 @@ class TwoDOFReachingEnv(gym.Env):
 
         # Start with header
         xml = """<mujoco>
-      <option gravity="0 0 -9.81" timestep="0.001"/>
-    
+      <option gravity="0 0 -9.81" timestep="0.001">
+        <flag contact="disable"/>
+      </option>
+      
       <visual>
         <global offwidth="1280" offheight="720"/>
         <quality shadowsize="4096"/>
