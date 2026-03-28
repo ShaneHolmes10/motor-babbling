@@ -9,6 +9,14 @@ from controller.environment import TwoDOFReachingEnv
 import matplotlib.pyplot as plt
 from model.dqn_agent import DQNAgent
 
+num_links = 1
+action_quantization = 5
+num_episodes = 1000
+decay_rate = 0.99999
+
+max_steps = 500
+eval_episodes = 1
+
 
 def plot_training_results(episode_rewards, losses, epsilons, model_path):
     """
@@ -116,7 +124,9 @@ def train(args):
     """Train DQN agent on robot reaching task."""
 
     # Create environment
-    env = TwoDOFReachingEnv()
+    env = TwoDOFReachingEnv(
+        num_links=num_links, action_quantization=action_quantization
+    )
 
     # Create agent
     agent = DQNAgent(
@@ -137,7 +147,9 @@ def train(args):
         print(f"Resuming from checkpoint: {args.save_path}")
         agent.load(args.save_path)
     elif args.resume:
-        print(f"Warning: --resume specified but no checkpoint found at {args.save_path}")
+        print(
+            f"Warning: --resume specified but no checkpoint found at {args.save_path}"
+        )
 
     # Training metrics
     episode_rewards = []
@@ -251,7 +263,9 @@ def evaluate(args):
     """Evaluate trained DQN agent."""
 
     # Create environment
-    env = TwoDOFReachingEnv()
+    env = TwoDOFReachingEnv(
+        num_links=num_links, action_quantization=action_quantization
+    )
 
     # Create agent
     agent = DQNAgent(
@@ -340,10 +354,6 @@ def evaluate(args):
     env.close()
 
 
-num_episodes = 10000
-decay_rate = 0.99999
-
-
 def main():
     parser = argparse.ArgumentParser(description="DQN for 2DOF Robot Arm")
     subparsers = parser.add_subparsers(dest="mode", help="Mode: train or eval")
@@ -357,7 +367,10 @@ def main():
         help="Number of training episodes",
     )
     train_parser.add_argument(
-        "--max-steps", type=int, default=200, help="Max steps per episode"
+        "--max-steps",
+        type=int,
+        default=max_steps,
+        help="Max steps per episode",
     )
     train_parser.add_argument(
         "--lr", type=float, default=1e-3, help="Learning rate"
@@ -427,11 +440,14 @@ def main():
     eval_parser.add_argument(
         "--eval-episodes",
         type=int,
-        default=10,
+        default=eval_episodes,
         help="Number of evaluation episodes",
     )
     eval_parser.add_argument(
-        "--max-steps", type=int, default=500, help="Max steps per episode"
+        "--max-steps",
+        type=int,
+        default=max_steps,
+        help="Max steps per episode",
     )
     eval_parser.add_argument(
         "--gui", action="store_true", help="Show GUI during evaluation"
