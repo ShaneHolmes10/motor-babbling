@@ -46,6 +46,10 @@ class TwoDOFReachingEnv(gym.Env):
         self.viewer = None
         self.renderer = None
 
+        self.steps_at_target = 0
+        self.target_radius = 0.05
+        self.required_steps_at_target = 100
+
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
 
@@ -78,6 +82,8 @@ class TwoDOFReachingEnv(gym.Env):
 
         obs = self._get_obs()
         info = {}
+
+        self.steps_at_target = 0
 
         return obs, info
 
@@ -114,8 +120,22 @@ class TwoDOFReachingEnv(gym.Env):
         # Compute reward
         reward = self._compute_reward()
 
+        ee_pos = self.data.site_xpos[0][[0, 2]].copy()
+        current_distance = np.linalg.norm(ee_pos - self.target)
+
+        if current_distance < self.target_radius:
+            self.steps_at_target += 1
+        else:
+            self.steps_at_target = 0
+
+        if self.steps_at_target >= self.required_steps_at_target:
+            terminated = True  # Success! Stayed at target
+        else:
+            terminated = False
+
+        truncated = False
+
         # Episode termination
-        terminated = False
         truncated = False
         info = {}
 
