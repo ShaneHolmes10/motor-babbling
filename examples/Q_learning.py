@@ -2,6 +2,7 @@ import argparse
 import torch
 import numpy as np
 import time
+import sys
 import mujoco
 import os
 import mujoco.viewer
@@ -11,7 +12,7 @@ from model.dqn_agent import DQNAgent
 
 num_links = 1
 action_quantization = 10
-num_episodes = 1000
+num_episodes = 500  # 1000
 decay_rate = 0.99999
 
 max_steps = 500
@@ -322,6 +323,7 @@ def evaluate(args):
                             success_count += 1
                             print("  Target reached!")
                         break
+                viewer.close()
         else:
             # No rendering
             for step in range(args.max_steps):
@@ -352,6 +354,9 @@ def evaluate(args):
     )
 
     env.close()
+
+    if args.gui:
+        sys.exit(0)
 
 
 def main():
