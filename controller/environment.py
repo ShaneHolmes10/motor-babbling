@@ -13,6 +13,8 @@ class TwoDOFReachingEnv(gym.Env):
         self.num_links = num_links
         self.link_length = 0.5
 
+        self.max_torque = 15.0
+
         xml = self._generate_xml()
 
         self.model = mujoco.MjModel.from_xml_string(xml)
@@ -254,7 +256,7 @@ class TwoDOFReachingEnv(gym.Env):
 
         # Add actuators for each joint
         for i in range(self.num_links):
-            xml += f'    <motor joint="joint{i+1}" gear="50" ctrllimited="true" ctrlrange="-1 1"/>\n'
+            xml += f'    <motor joint="joint{i+1}" gear="{self.max_torque}" ctrllimited="true" ctrlrange="-1 1"/>\n'
 
         xml += """  </actuator>
     </mujoco>
