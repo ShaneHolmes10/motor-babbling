@@ -359,6 +359,43 @@ def evaluate(args):
         sys.exit(0)
 
 
+def play(args):
+    """Watch trained agent perform indefinitely."""
+
+    env = TwoDOFReachingEnv(
+        num_links=num_links, action_quantization=action_quantization
+    )
+
+    agent = DQNAgent(
+        state_dim=env.observation_space.shape[0],
+        action_dim=env.action_space.n,
+        device="cpu",
+    )
+
+    agent.load(args.load_path)
+    print(f"Loaded model from {args.load_path}")
+    print("Watching trained agent perform...")
+    print("Close viewer window to exit")
+    print()
+
+    state, info = env.reset(options={"random_target": args.random_targets})
+
+    with mujoco.viewer.launch_passive(env.model, env.data) as viewer:
+        viewer.cam.azimuth = 90
+        viewer.cam.elevation = -20
+        viewer.cam.distance = 3.0
+        viewer.cam.lookat[:] = [0, 0, 1.2]
+
+        while viewer.is_running():
+            action = agent.select_action(state, training=False)
+            state, reward, terminated, truncated, info = env.step(action)
+
+            viewer.sync()
+            time.sleep(0.01)
+
+    env.close()
+
+
 def main():
     parser = argparse.ArgumentParser(description="DQN for 2DOF Robot Arm")
     subparsers = parser.add_subparsers(dest="mode", help="Mode: train or eval")
@@ -463,12 +500,31 @@ def main():
         help="Use random target positions",
     )
 
+    #
+    #
+    #
+    # Play arguments
+    play_parser = subparsers.add_parser("play", help="Watch the trained agent")
+    play_parser.add_argument(
+        "--load-path",
+        type=str,
+        default="data/checkpoints/dqn_robot.pth",
+        help="Path to load model",
+    )
+    play_parser.add_argument(
+        "--random-targets",
+        action="store_true",
+        help="Use random target positions",
+    )
+
     args = parser.parse_args()
 
     if args.mode == "train":
         train(args)
     elif args.mode == "eval":
         evaluate(args)
+    elif args.mode == "play":
+        play(args)
     else:
         parser.print_help()
 
