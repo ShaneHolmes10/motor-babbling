@@ -12,7 +12,7 @@ from controller.environment import RobotReachingEnv
 
 num_links = 1
 action_quantization = 10
-num_episodes = 500
+num_episodes = 1000
 decay_rate = 0.99999
 
 max_steps = 500
@@ -90,7 +90,7 @@ def get_agent(agent_type, env, args, mode="train"):
             return AgentClass(
                 state_dim=state_dim,
                 action_dim=action_dim,
-                device="cpu",
+                device="cuda",
             )
 
     common_params = {
