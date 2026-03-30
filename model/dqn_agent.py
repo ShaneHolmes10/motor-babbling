@@ -4,6 +4,8 @@ import torch.optim as optim
 import numpy as np
 import random
 from collections import deque
+from .agent import BaseAgent
+from .replay_buffer import ReplayBuffer
 
 
 class QNetwork(nn.Module):
@@ -28,32 +30,7 @@ class QNetwork(nn.Module):
         return self.network(state)
 
 
-class ReplayBuffer:
-    """Experience replay buffer for storing transitions."""
-
-    def __init__(self, capacity=10000):
-        self.buffer = deque(maxlen=capacity)
-
-    def push(self, state, action, reward, next_state, done):
-        self.buffer.append((state, action, reward, next_state, done))
-
-    def sample(self, batch_size):
-        batch = random.sample(self.buffer, batch_size)
-        states, actions, rewards, next_states, dones = zip(*batch)
-
-        return (
-            np.array(states),
-            np.array(actions),
-            np.array(rewards),
-            np.array(next_states),
-            np.array(dones),
-        )
-
-    def __len__(self):
-        return len(self.buffer)
-
-
-class DQNAgent:
+class DQNAgent(BaseAgent):
     """DQN agent for robot arm control."""
 
     def __init__(
@@ -65,37 +42,30 @@ class DQNAgent:
         epsilon_start=1.0,
         epsilon_end=0.01,
         epsilon_decay=0.995,
-        buffer_size=50000,  # Originally 10000
-        batch_size=32,  # Originally 64
+        buffer_size=50000,
+        batch_size=32,
         target_update_freq=100,
-        device="cuda",  # change to GPU potentially later
+        device="cpu",
     ):
-        self.state_dim = state_dim
-        self.action_dim = action_dim
+        super().__init__(state_dim, action_dim, device)
+
         self.gamma = gamma
         self.epsilon = epsilon_start
         self.epsilon_end = epsilon_end
         self.epsilon_decay = epsilon_decay
         self.batch_size = batch_size
         self.target_update_freq = target_update_freq
-        self.device = device
 
-        # Q-network and target network
         self.q_network = QNetwork(state_dim, action_dim).to(device)
         self.target_network = QNetwork(state_dim, action_dim).to(device)
         self.target_network.load_state_dict(self.q_network.state_dict())
         self.target_network.eval()
 
-        # Optimizer
         self.optimizer = optim.Adam(
             self.q_network.parameters(), lr=learning_rate
         )
 
-        # Replay buffer
         self.replay_buffer = ReplayBuffer(buffer_size)
-
-        # Training step counter
-        self.steps = 0
 
     def select_action(self, state, training=True):
         """
@@ -109,10 +79,8 @@ class DQNAgent:
             Selected action index
         """
         if training and random.random() < self.epsilon:
-            # Random action (exploration)
             return random.randrange(self.action_dim)
         else:
-            # Greedy action (exploitation)
             with torch.no_grad():
                 state_tensor = (
                     torch.FloatTensor(state).unsqueeze(0).to(self.device)
@@ -129,44 +97,36 @@ class DQNAgent:
         if len(self.replay_buffer) < self.batch_size:
             return None
 
-        # Sample batch from replay buffer
         states, actions, rewards, next_states, dones = (
             self.replay_buffer.sample(self.batch_size)
         )
 
-        # Convert to tensors
         states = torch.FloatTensor(states).to(self.device)
         actions = torch.LongTensor(actions).to(self.device)
         rewards = torch.FloatTensor(rewards).to(self.device)
         next_states = torch.FloatTensor(next_states).to(self.device)
         dones = torch.FloatTensor(dones).to(self.device)
 
-        # Current Q values
         current_q_values = (
             self.q_network(states).gather(1, actions.unsqueeze(1)).squeeze(1)
         )
 
-        # Target Q values
         with torch.no_grad():
             next_q_values = self.target_network(next_states).max(1)[0]
             target_q_values = (
                 rewards + (1 - dones) * self.gamma * next_q_values
             )
 
-        # Compute loss
         loss = nn.MSELoss()(current_q_values, target_q_values)
 
-        # Optimize
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
 
-        # Update target network periodically
         self.steps += 1
         if self.steps % self.target_update_freq == 0:
             self.target_network.load_state_dict(self.q_network.state_dict())
 
-        # Decay epsilon
         self.epsilon = max(self.epsilon_end, self.epsilon * self.epsilon_decay)
 
         return loss.item()
@@ -194,3 +154,10 @@ class DQNAgent:
         self.optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
         self.epsilon = checkpoint["epsilon"]
         self.steps = checkpoint["steps"]
+
+    def get_training_metrics(self):
+        """Get current training metrics."""
+        return {
+            "steps": self.steps,
+            "epsilon": self.epsilon,
+        }
