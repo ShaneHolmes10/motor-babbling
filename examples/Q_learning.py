@@ -12,11 +12,11 @@ from model.dqn_agent import DQNAgent
 
 num_links = 1
 action_quantization = 10
-num_episodes = 500  # 1000
+num_episodes = 1000
 decay_rate = 0.99999
 
-max_steps = 500
-eval_episodes = 1
+max_steps = 700
+eval_episodes = 10
 
 
 def plot_training_results(episode_rewards, losses, epsilons, model_path):

@@ -13,7 +13,7 @@ class TwoDOFReachingEnv(gym.Env):
         self.num_links = num_links
         self.link_length = 0.5
 
-        self.max_torque = 15.0
+        self.max_torque = 20.0
 
         xml = self._generate_xml()
 
@@ -65,7 +65,7 @@ class TwoDOFReachingEnv(gym.Env):
         if options and options.get("random_target", False):
             angle = np.random.uniform(-np.pi / 2, np.pi / 2)
             max_reach = 0.5 * self.num_links  # Total reach of all links
-            radius = np.random.uniform(0.2, max_reach)
+            radius = max_reach
             self.target = np.array(
                 [radius * np.sin(angle), 1.5 - radius * np.cos(angle)]
             )
