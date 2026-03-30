@@ -2,12 +2,21 @@ import argparse
 import torch
 import numpy as np
 import time
+import sys
 import mujoco
 import os
 import mujoco.viewer
 from controller.environment import TwoDOFReachingEnv
 import matplotlib.pyplot as plt
 from model.dqn_agent import DQNAgent
+
+num_links = 1
+action_quantization = 10
+num_episodes = 1000
+decay_rate = 0.99999
+
+max_steps = 700
+eval_episodes = 10
 
 
 def plot_training_results(episode_rewards, losses, epsilons, model_path):
@@ -116,7 +125,9 @@ def train(args):
     """Train DQN agent on robot reaching task."""
 
     # Create environment
-    env = TwoDOFReachingEnv()
+    env = TwoDOFReachingEnv(
+        num_links=num_links, action_quantization=action_quantization
+    )
 
     # Create agent
     agent = DQNAgent(
@@ -137,7 +148,9 @@ def train(args):
         print(f"Resuming from checkpoint: {args.save_path}")
         agent.load(args.save_path)
     elif args.resume:
-        print(f"Warning: --resume specified but no checkpoint found at {args.save_path}")
+        print(
+            f"Warning: --resume specified but no checkpoint found at {args.save_path}"
+        )
 
     # Training metrics
     episode_rewards = []
@@ -251,7 +264,9 @@ def evaluate(args):
     """Evaluate trained DQN agent."""
 
     # Create environment
-    env = TwoDOFReachingEnv()
+    env = TwoDOFReachingEnv(
+        num_links=num_links, action_quantization=action_quantization
+    )
 
     # Create agent
     agent = DQNAgent(
@@ -308,6 +323,7 @@ def evaluate(args):
                             success_count += 1
                             print("  Target reached!")
                         break
+                viewer.close()
         else:
             # No rendering
             for step in range(args.max_steps):
@@ -339,9 +355,45 @@ def evaluate(args):
 
     env.close()
 
+    if args.gui:
+        sys.exit(0)
 
-num_episodes = 10000
-decay_rate = 0.99999
+
+def play(args):
+    """Watch trained agent perform indefinitely."""
+
+    env = TwoDOFReachingEnv(
+        num_links=num_links, action_quantization=action_quantization
+    )
+
+    agent = DQNAgent(
+        state_dim=env.observation_space.shape[0],
+        action_dim=env.action_space.n,
+        device="cpu",
+    )
+
+    agent.load(args.load_path)
+    print(f"Loaded model from {args.load_path}")
+    print("Watching trained agent perform...")
+    print("Close viewer window to exit")
+    print()
+
+    state, info = env.reset(options={"random_target": args.random_targets})
+
+    with mujoco.viewer.launch_passive(env.model, env.data) as viewer:
+        viewer.cam.azimuth = 90
+        viewer.cam.elevation = -20
+        viewer.cam.distance = 3.0
+        viewer.cam.lookat[:] = [0, 0, 1.2]
+
+        while viewer.is_running():
+            action = agent.select_action(state, training=False)
+            state, reward, terminated, truncated, info = env.step(action)
+
+            viewer.sync()
+            time.sleep(0.01)
+
+    env.close()
 
 
 def main():
@@ -357,7 +409,10 @@ def main():
         help="Number of training episodes",
     )
     train_parser.add_argument(
-        "--max-steps", type=int, default=200, help="Max steps per episode"
+        "--max-steps",
+        type=int,
+        default=max_steps,
+        help="Max steps per episode",
     )
     train_parser.add_argument(
         "--lr", type=float, default=1e-3, help="Learning rate"
@@ -427,16 +482,36 @@ def main():
     eval_parser.add_argument(
         "--eval-episodes",
         type=int,
-        default=10,
+        default=eval_episodes,
         help="Number of evaluation episodes",
     )
     eval_parser.add_argument(
-        "--max-steps", type=int, default=500, help="Max steps per episode"
+        "--max-steps",
+        type=int,
+        default=max_steps,
+        help="Max steps per episode",
     )
     eval_parser.add_argument(
         "--gui", action="store_true", help="Show GUI during evaluation"
     )
     eval_parser.add_argument(
+        "--random-targets",
+        action="store_true",
+        help="Use random target positions",
+    )
+
+    #
+    #
+    #
+    # Play arguments
+    play_parser = subparsers.add_parser("play", help="Watch the trained agent")
+    play_parser.add_argument(
+        "--load-path",
+        type=str,
+        default="data/checkpoints/dqn_robot.pth",
+        help="Path to load model",
+    )
+    play_parser.add_argument(
         "--random-targets",
         action="store_true",
         help="Use random target positions",
@@ -448,6 +523,8 @@ def main():
         train(args)
     elif args.mode == "eval":
         evaluate(args)
+    elif args.mode == "play":
+        play(args)
     else:
         parser.print_help()
 

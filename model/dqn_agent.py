@@ -65,8 +65,8 @@ class DQNAgent:
         epsilon_start=1.0,
         epsilon_end=0.01,
         epsilon_decay=0.995,
-        buffer_size=10000,
-        batch_size=64,
+        buffer_size=50000,  # Originally 10000
+        batch_size=32,  # Originally 64
         target_update_freq=100,
         device="cuda",  # change to GPU potentially later
     ):

@@ -1,15 +1,26 @@
 import time
+import argparse
 import mujoco
 import mujoco.viewer
 from controller.environment import TwoDOFReachingEnv
 
 if __name__ == "__main__":
-    env = TwoDOFReachingEnv()
+
+    parser = argparse.ArgumentParser(description="Control robot arm manually")
+    parser.add_argument(
+        "--num-links",
+        type=int,
+        default=2,
+        help="Number of links in the robot arm (default: 2)",
+    )
+    args = parser.parse_args()
+
+    env = TwoDOFReachingEnv(num_links=args.num_links)
 
     obs, info = env.reset()
 
     print("MuJoCo Viewer Controls:")
-    print("- Drag 'control 0' and 'control 1' sliders to apply torques")
+    print("- Drag sliders to apply torques")
     print("- Use mouse to rotate camera")
     print("- Close window when done")
     print()
