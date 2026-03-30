@@ -1,3 +1,3 @@
-from .environment import TwoDOFReachingEnv
+from .environment import RobotReachingEnv
 
-__all__ = ["TwoDOFReachingEnv"]
+__all__ = ["RobotReachingEnv"]

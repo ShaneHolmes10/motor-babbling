@@ -2,7 +2,7 @@ import time
 import argparse
 import mujoco
 import mujoco.viewer
-from controller.environment import TwoDOFReachingEnv
+from controller.environment import RobotReachingEnv
 
 if __name__ == "__main__":
 
@@ -15,7 +15,7 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    env = TwoDOFReachingEnv(num_links=args.num_links)
+    env = RobotReachingEnv(num_links=args.num_links)
 
     obs, info = env.reset()
 
