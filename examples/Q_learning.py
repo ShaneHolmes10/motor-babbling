@@ -9,10 +9,11 @@ import os
 import mujoco.viewer
 import matplotlib.pyplot as plt
 from controller.environment import RobotReachingEnv
+import time as time_module
 
 num_links = 1
 action_quantization = 10
-num_episodes = 1000
+num_episodes = 500
 decay_rate = 0.99999
 
 max_steps = 500
@@ -301,6 +302,8 @@ def plot_training_results(episode_rewards, losses, model_path, agent_type):
 def train(args):
     """Train agent on robot reaching task."""
 
+    start_time = time_module.time()
+
     continuous = requires_continuous_actions(args.agent)
     env = RobotReachingEnv(
         num_links=num_links,
@@ -471,6 +474,16 @@ def train(args):
             args.save_path,
             args.agent,
         )
+
+    # Print total training time
+    end_time = time_module.time()
+    total_time = end_time - start_time
+    hours = int(total_time // 3600)
+    minutes = int((total_time % 3600) // 60)
+    seconds = int(total_time % 60)
+    print(
+        f"\nTotal training time: {hours}h {minutes}m {seconds}s ({total_time:.2f} seconds)"
+    )
 
 
 def evaluate(args):
