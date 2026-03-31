@@ -17,7 +17,7 @@ num_episodes = 500
 decay_rate = 0.99999
 
 max_steps = 500
-eval_episodes = 1
+eval_episodes = 10
 
 
 def get_agent_class(agent_type):
