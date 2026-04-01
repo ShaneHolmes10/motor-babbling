@@ -589,12 +589,42 @@ def play(args):
     agent.load(args.load_path)
     print(f"Loaded {args.agent.upper()} model from {args.load_path}")
     print("Watching trained agent perform...")
+    print("Controls:")
+    print("  Use arrow keys")
     print("Close viewer window to exit")
     print()
 
     state, info = env.reset(options={"random_target": args.random_targets})
 
-    with mujoco.viewer.launch_passive(env.model, env.data) as viewer:
+    def key_callback(keycode):
+        key = chr(keycode).lower()
+        move_amount = 0.05
+
+        if keycode == 265:  # up arrow
+            env.target[1] += move_amount
+        elif keycode == 264:  # down arrow
+            env.target[1] -= move_amount
+        elif keycode == 263:  # left arrow
+            env.target[0] -= move_amount
+        elif keycode == 262:  # right arrow
+            env.target[0] += move_amount
+        elif key == "r":
+            angle = np.random.uniform(-np.pi / 2, np.pi / 2)
+            max_reach = env.link_length * env.num_links
+            radius = np.random.uniform(0.1, max_reach)
+            env.target = np.array(
+                [radius * np.sin(angle), 1.5 - radius * np.cos(angle)]
+            )
+
+        env.data.mocap_pos[env.target_mocap_id] = [
+            env.target[0],
+            0,
+            env.target[1],
+        ]
+
+    with mujoco.viewer.launch_passive(
+        env.model, env.data, key_callback=key_callback
+    ) as viewer:
         viewer.cam.azimuth = 90
         viewer.cam.elevation = -20
         viewer.cam.distance = 3.0
