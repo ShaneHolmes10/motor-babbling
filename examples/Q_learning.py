@@ -11,13 +11,13 @@ import matplotlib.pyplot as plt
 from controller.environment import RobotReachingEnv
 import time as time_module
 
-num_links = 1
+num_links = 2
 action_quantization = 10
-num_episodes = 500
+num_episodes = 1000
 decay_rate = 0.99999
 
 max_steps = 500
-eval_episodes = 10
+eval_episodes = 100
 
 
 def get_agent_class(agent_type):
