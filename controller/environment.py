@@ -73,7 +73,7 @@ class RobotReachingEnv(gym.Env):
         if options and options.get("random_target", False):
             angle = np.random.uniform(-np.pi / 2, np.pi / 2)
             max_reach = self.link_length * self.num_links
-            radius = max_reach
+            radius = np.random.uniform(0.1, max_reach)
             self.target = np.array(
                 [radius * np.sin(angle), 1.5 - radius * np.cos(angle)]
             )
