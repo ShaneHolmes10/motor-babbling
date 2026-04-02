@@ -91,7 +91,7 @@ def get_agent(agent_type, env, args, mode="train"):
             return AgentClass(
                 state_dim=state_dim,
                 action_dim=action_dim,
-                device="cuda",
+                device="cpu",
             )
 
     common_params = {
