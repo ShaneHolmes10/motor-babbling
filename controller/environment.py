@@ -24,7 +24,7 @@ class RobotReachingEnv(gym.Env):
 
         self.num_links = num_links
         self.link_length = 0.5
-        self.max_torque = 120.0
+        self.max_torque = 60.0
         self.continuous = continuous
 
         xml = self._generate_xml()
