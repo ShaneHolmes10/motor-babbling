@@ -58,7 +58,7 @@ class RobotReachingEnv(gym.Env):
         self.renderer = None
 
         self.steps_at_target = 0
-        self.target_radius = 0.05
+        self.target_radius = 0.10
         self.required_steps_at_target = 100
 
     def reset(self, seed=None, options=None):
