@@ -178,7 +178,7 @@ The dynamic import system will handle the rest: `--agent myagent` loads `model.m
 
 ## Acknowledgements  
 
-AI was used to aid in development.
+AI was used to aid in code development and editing parts of the report
 
 
 
