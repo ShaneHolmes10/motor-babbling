@@ -1,3 +1,17 @@
+"""
+@brief Entry point for training, evaluating, and watching RL agents on the robot reaching task.
+
+Supports any agent that follows the BaseAgent interface by dynamically importing
+it from the model/ package. Continuous-action agents (DDPG, TD3, SAC, PPO) and
+discrete-action agents (DQN) are both supported; the correct environment mode is
+selected automatically based on the agent type.
+
+Usage:
+    python Q_learning.py --agent dqn  train [options]
+    python Q_learning.py --agent ddpg eval  --load-path <path> [--gui]
+    python Q_learning.py --agent ddpg play  --load-path <path>
+"""
+
 import argparse
 import importlib
 import torch
@@ -11,24 +25,28 @@ import matplotlib.pyplot as plt
 from controller.environment import RobotReachingEnv
 import time as time_module
 
-num_links = 2
-action_quantization = 10
-num_episodes = 1000
-decay_rate = 0.99999
+# --- Global defaults (overridable via CLI flags) ---
+num_links = 2  # number of arm links used by all modes
+action_quantization = (
+    10  # discrete torque levels per joint for DQN-style agents
+)
+num_episodes = 1000  # default training episode count
+decay_rate = 0.99999  # default per-step epsilon decay rate for DQN
 
-max_steps = 500
-eval_episodes = 100
+max_steps = 500  # maximum steps allowed per episode before truncation
+eval_episodes = 100  # default number of episodes for evaluation mode
 
 
 def get_agent_class(agent_type):
     """
-    Dynamically impoXrt agent class.
+    @brief Dynamically import and return an agent class from the model package.
 
-    Args:
-        agent_type: String name of agent (e.g., 'dqn', 'ddpg')
+    Constructs the module path as model.<agent_type>_agent and the class name
+    as <AGENT_TYPE>Agent (e.g., agent_type="dqn" -> model.dqn_agent.DQNAgent).
 
-    Returns:
-        Agent class
+    @param agent_type Lowercase string identifier for the agent (e.g., 'dqn', 'ddpg').
+    @return The agent class object, ready to be instantiated.
+    @throws ValueError if the module or class cannot be found.
     """
     try:
         agent_module = importlib.import_module(f"model.{agent_type}_agent")
@@ -40,13 +58,14 @@ def get_agent_class(agent_type):
 
 def requires_continuous_actions(agent_type):
     """
-    Determine if agent requires continuous action space.
+    @brief Determine whether an agent requires a continuous action space.
 
-    Args:
-        agent_type: String name of agent
+    Used to configure RobotReachingEnv with the correct action mode before
+    constructing the agent.
 
-    Returns:
-        True if continuous, False if discrete
+    @param agent_type Lowercase string identifier for the agent.
+    @return True if the agent expects a continuous Box action space,
+            False if it expects a discrete Discrete action space.
     """
     continuous_agents = ["ddpg", "td3", "sac", "ppo"]
     return agent_type.lower() in continuous_agents
@@ -54,27 +73,31 @@ def requires_continuous_actions(agent_type):
 
 def get_agent(agent_type, env, args, mode="train"):
     """
-    Create agent with appropriate parameters based on type.
+    @brief Instantiate an agent with parameters appropriate for the given mode.
 
-    Args:
-        agent_type: String name of agent
-        env: Environment instance
-        args: Command line arguments
-        mode: 'train', 'eval', or 'play' - for eval/play, uses minimal params
+    In eval/play mode only state_dim, action_dim, and device are passed so that
+    the agent can be constructed cheaply for inference. In train mode all
+    hyperparameters from args are forwarded.
 
-    Returns:
-        Initialized agent
+    @param agent_type Lowercase string identifier for the agent (e.g., 'dqn', 'ddpg').
+    @param env        Constructed RobotReachingEnv instance used to infer state/action dims.
+    @param args       Parsed argparse namespace containing hyperparameter flags.
+    @param mode       One of 'train', 'eval', or 'play'. Eval/play skip hyperparams.
+    @return Initialized agent instance ready for select_action() calls.
+    @throws ValueError if the agent needs custom parameters not handled here.
     """
     AgentClass = get_agent_class(agent_type)
 
     state_dim = env.observation_space.shape[0]
 
+    # Continuous agents expose action_space.shape; discrete agents expose action_space.n
     if requires_continuous_actions(agent_type):
         action_dim = env.action_space.shape[0]
     else:
         action_dim = env.action_space.n
 
     if mode in ["eval", "play"]:
+        # Minimal construction: no replay buffer or optimizer needed for inference
         if agent_type == "dqn":
             return AgentClass(
                 state_dim=state_dim,
@@ -94,6 +117,7 @@ def get_agent(agent_type, env, args, mode="train"):
                 device="cpu",
             )
 
+    # Shared hyperparameters common to all agent types
     common_params = {
         "state_dim": state_dim,
         "action_dim": action_dim,
@@ -104,6 +128,7 @@ def get_agent(agent_type, env, args, mode="train"):
     }
 
     if agent_type == "dqn":
+        # DQN-specific: epsilon-greedy exploration and periodic target-network sync
         return AgentClass(
             **common_params,
             learning_rate=args.lr,
@@ -113,6 +138,7 @@ def get_agent(agent_type, env, args, mode="train"):
             target_update_freq=args.target_update_freq,
         )
     elif agent_type == "ddpg":
+        # DDPG-specific: separate actor/critic learning rates, soft update tau, and OU noise
         return AgentClass(
             **common_params,
             max_action=1.0,
@@ -122,6 +148,7 @@ def get_agent(agent_type, env, args, mode="train"):
             noise_std=args.noise_std,
         )
     else:
+        # Attempt a generic construction; agent must accept the common_params subset
         try:
             return AgentClass(**common_params)
         except TypeError as e:
@@ -133,23 +160,37 @@ def get_agent(agent_type, env, args, mode="train"):
 
 def get_loss_structure(agent_type):
     """
-    Determine loss structure for plotting.
+    @brief Return the loss structure used by an agent for plotting purposes.
 
-    Args:
-        agent_type: String name of agent
+    Actor-critic agents produce separate critic and actor losses; value-based
+    agents produce a single TD loss.
 
-    Returns:
-        'single' for one loss value, 'dual' for critic/actor losses
+    @param agent_type Lowercase string identifier for the agent.
+    @return 'dual' for actor-critic agents (DDPG, TD3, SAC, PPO),
+            'single' for value-based agents (DQN).
     """
     dual_loss_agents = ["ddpg", "td3", "sac", "ppo"]
     return "dual" if agent_type.lower() in dual_loss_agents else "single"
 
 
 def plot_training_results(episode_rewards, losses, model_path, agent_type):
-    """Generate and save training plots."""
+    """
+    @brief Generate, save, and export training curve plots and raw data.
+
+    Produces a PNG figure with reward and loss subplots, overlaying a moving
+    average for trend clarity. Also saves the underlying arrays to an .npz file
+    for offline analysis.
+
+    @param episode_rewards List of total rewards, one entry per training episode.
+    @param losses          For single-loss agents: list of scalar loss values.
+                           For dual-loss agents: tuple of (critic_losses, actor_losses).
+    @param model_path      Path used to derive the output file prefix (basename without extension).
+    @param agent_type      Lowercase string identifier for the agent; determines plot layout.
+    """
     plot_dir = "data/plots"
     os.makedirs(plot_dir, exist_ok=True)
 
+    # Derive a consistent filename prefix from the saved model path
     plot_prefix = os.path.splitext(os.path.basename(model_path))[0]
     loss_structure = get_loss_structure(agent_type)
 
@@ -164,6 +205,7 @@ def plot_training_results(episode_rewards, losses, model_path, agent_type):
             label="Episode Reward",
         )
         axes[0].plot(episode_rewards, alpha=0.3, linewidth=0.5)
+        # Adaptive window: at most 50 episodes, but never more than 10% of total data
         window = min(50, len(episode_rewards) // 10)
         if window > 0:
             moving_avg = np.convolve(
@@ -206,6 +248,7 @@ def plot_training_results(episode_rewards, losses, model_path, agent_type):
         }
 
     elif loss_structure == "dual":
+        # Unpack the (critic, actor) loss tuple from actor-critic agents
         critic_losses, actor_losses = losses
         fig, axes = plt.subplots(3, 1, figsize=(10, 12))
 
@@ -283,6 +326,7 @@ def plot_training_results(episode_rewards, losses, model_path, agent_type):
 
     plt.tight_layout()
 
+    # Save standard and high-resolution versions of the figure
     plot_path = os.path.join(plot_dir, f"{plot_prefix}_training.png")
     plt.savefig(plot_path, dpi=150)
     print(f"Training plots saved to {plot_path}")
@@ -294,16 +338,30 @@ def plot_training_results(episode_rewards, losses, model_path, agent_type):
 
     plt.close()
 
+    # Persist raw arrays alongside the plots for offline analysis
     data_path = os.path.join(plot_dir, f"{plot_prefix}_training_data.npz")
     np.savez(data_path, **data_dict)
     print(f"Training data saved to {data_path}")
 
 
 def train(args):
-    """Train agent on robot reaching task."""
+    """
+    @brief Run the full training loop for the specified agent.
+
+    Creates the environment and agent, optionally resumes from a checkpoint,
+    then iterates over episodes collecting transitions and updating the policy.
+    Periodic console logs and model checkpoints are written according to args.
+    Training plots and raw data are saved on completion.
+
+    @param args Parsed argparse namespace. Expected fields: agent, episodes,
+                max_steps, gamma, buffer_size, batch_size, save_path, save_freq,
+                print_freq, random_targets, gui, resume, and agent-specific
+                hyperparameter flags (lr, epsilon_*, actor_lr, critic_lr, tau, noise_std).
+    """
 
     start_time = time_module.time()
 
+    # Select continuous vs discrete environment mode based on agent type
     continuous = requires_continuous_actions(args.agent)
     env = RobotReachingEnv(
         num_links=num_links,
@@ -313,6 +371,7 @@ def train(args):
 
     agent = get_agent(args.agent, env, args)
 
+    # Optionally restore weights and replay buffer from a previous run
     if args.resume and os.path.exists(args.save_path):
         print(f"Resuming from checkpoint: {args.save_path}")
         agent.load(args.save_path)
@@ -324,6 +383,7 @@ def train(args):
     episode_rewards = []
     episode_lengths = []
 
+    # Initialize loss tracking containers matched to the agent's output structure
     loss_structure = get_loss_structure(args.agent)
     if loss_structure == "single":
         losses = []
@@ -342,6 +402,7 @@ def train(args):
     print(f"GUI: {'Enabled' if args.gui else 'Disabled'}")
     print()
 
+    # Launch a passive viewer for visual monitoring during training (optional)
     viewer = None
     if args.gui:
         viewer = mujoco.viewer.launch_passive(env.model, env.data)
@@ -356,7 +417,9 @@ def train(args):
                 options={"random_target": args.random_targets}
             )
             episode_reward = 0
-            episode_loss = []
+            episode_loss = (
+                []
+            )  # accumulate per-step losses to average at episode end
 
             for step in range(args.max_steps):
                 action = agent.select_action(state, training=True)
@@ -366,8 +429,10 @@ def train(args):
                 )
                 done = terminated or truncated
 
+                # Push the transition into the replay buffer
                 agent.store_transition(state, action, reward, next_state, done)
 
+                # Perform one gradient update step (returns None if buffer not yet full)
                 loss = agent.train_step()
                 if loss is not None:
                     episode_loss.append(loss)
@@ -388,6 +453,7 @@ def train(args):
             episode_rewards.append(episode_reward)
             episode_lengths.append(step + 1)
 
+            # Aggregate per-step losses into a single per-episode scalar
             if episode_loss:
                 if loss_structure == "single":
                     losses.append(np.mean(episode_loss))
@@ -406,6 +472,7 @@ def train(args):
                             np.mean([x[1] for x in valid_losses])
                         )
 
+            # Periodic progress report to stdout
             if (episode + 1) % args.print_freq == 0:
                 avg_reward = np.mean(episode_rewards[-args.print_freq :])
                 avg_length = np.mean(episode_lengths[-args.print_freq :])
@@ -443,12 +510,14 @@ def train(args):
                         f"  Avg Actor Loss (last {args.print_freq}): {avg_actor:.4f}"
                     )
 
+                # Print agent-specific metrics (e.g., epsilon for DQN)
                 metrics = agent.get_training_metrics()
                 for key, value in metrics.items():
                     if key != "steps":
                         print(f"  {key.capitalize()}: {value:.3f}")
                 print()
 
+            # Periodic checkpoint save
             if (episode + 1) % args.save_freq == 0:
                 agent.save(args.save_path)
                 print(f"Checkpoint saved to {args.save_path}")
@@ -458,6 +527,7 @@ def train(args):
         print(f"Final model saved to {args.save_path}")
 
     finally:
+        # Always release viewer and environment even if training is interrupted
         if viewer is not None:
             viewer.close()
         env.close()
@@ -487,7 +557,16 @@ def train(args):
 
 
 def evaluate(args):
-    """Evaluate trained agent."""
+    """
+    @brief Run the trained agent through a fixed number of evaluation episodes.
+
+    Loads a saved checkpoint, rolls out the policy without exploration noise,
+    and reports per-episode rewards and an aggregate success rate. Optionally
+    renders each episode in the MuJoCo viewer.
+
+    @param args Parsed argparse namespace. Expected fields: agent, load_path,
+                eval_episodes, max_steps, gui, random_targets.
+    """
 
     continuous = requires_continuous_actions(args.agent)
     env = RobotReachingEnv(
@@ -503,7 +582,9 @@ def evaluate(args):
     print()
 
     episode_rewards = []
-    success_count = 0
+    success_count = (
+        0  # episodes where the arm held the target for the required steps
+    )
 
     for episode in range(args.eval_episodes):
         state, info = env.reset(options={"random_target": args.random_targets})
@@ -512,6 +593,7 @@ def evaluate(args):
         print(f"Episode {episode + 1}/{args.eval_episodes}")
 
         if args.gui:
+            # GUI path: open a viewer per episode and step until done or viewer closed
             with mujoco.viewer.launch_passive(env.model, env.data) as viewer:
                 viewer.cam.azimuth = 90
                 viewer.cam.elevation = -20
@@ -542,6 +624,7 @@ def evaluate(args):
                         break
                 viewer.close()
         else:
+            # Headless path: run as fast as possible without rendering overhead
             for step in range(args.max_steps):
                 action = agent.select_action(state, training=False)
                 next_state, reward, terminated, truncated, info = env.step(
@@ -570,12 +653,22 @@ def evaluate(args):
 
     env.close()
 
+    # Exit explicitly when using GUI to avoid viewer teardown issues on some platforms
     if args.gui:
         sys.exit(0)
 
 
 def play(args):
-    """Watch trained agent perform indefinitely."""
+    """
+    @brief Watch the trained agent run indefinitely with an interactive target.
+
+    Loads a saved checkpoint and renders the policy in the MuJoCo viewer.
+    The user can reposition the target in real time using arrow keys or
+    randomize it by pressing 'r'.
+
+    @param args Parsed argparse namespace. Expected fields: agent, load_path,
+                random_targets.
+    """
 
     continuous = requires_continuous_actions(args.agent)
     env = RobotReachingEnv(
@@ -597,18 +690,28 @@ def play(args):
     state, info = env.reset(options={"random_target": args.random_targets})
 
     def key_callback(keycode):
-        key = chr(keycode).lower()
-        move_amount = 0.05
+        """
+        @brief Handle keyboard input to reposition the target during play mode.
 
-        if keycode == 265:  # up arrow
+        Arrow keys translate the target by a fixed step; 'r' randomizes it to a
+        new reachable position. The mocap body is updated immediately so the
+        visual marker moves on the next viewer sync.
+
+        @param keycode Integer GLFW keycode for the pressed key.
+        """
+        key = chr(keycode).lower()
+        move_amount = 0.05  # world-space distance moved per keypress (meters)
+
+        if keycode == 265:  # up arrow: move target upward (+z)
             env.target[1] += move_amount
-        elif keycode == 264:  # down arrow
+        elif keycode == 264:  # down arrow: move target downward (-z)
             env.target[1] -= move_amount
-        elif keycode == 263:  # left arrow
+        elif keycode == 263:  # left arrow: move target left (-x)
             env.target[0] -= move_amount
-        elif keycode == 262:  # right arrow
+        elif keycode == 262:  # right arrow: move target right (+x)
             env.target[0] += move_amount
         elif key == "r":
+            # Randomize target to a reachable polar position within the arm's workspace
             angle = np.random.uniform(-np.pi / 2, np.pi / 2)
             max_reach = env.link_length * env.num_links
             radius = np.random.uniform(0.1, max_reach)
@@ -616,6 +719,7 @@ def play(args):
                 [radius * np.sin(angle), 1.5 - radius * np.cos(angle)]
             )
 
+        # Push the updated target position into the MuJoCo mocap body
         env.data.mocap_pos[env.target_mocap_id] = [
             env.target[0],
             0,
@@ -635,12 +739,19 @@ def play(args):
             state, reward, terminated, truncated, info = env.step(action)
 
             viewer.sync()
-            time.sleep(0.01)
+            time.sleep(0.01)  # ~100 Hz render rate
 
     env.close()
 
 
 def main():
+    """
+    @brief Parse command-line arguments and dispatch to train, evaluate, or play.
+
+    Defines a two-level argument structure: global flags (--agent) plus
+    subcommand-specific flags (train/eval/play). Prints help if no subcommand
+    is provided.
+    """
     parser = argparse.ArgumentParser(
         description="Train RL agents for robot arm control",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -667,6 +778,7 @@ To add a new agent:
         dest="mode", help="Mode: train, eval, or play"
     )
 
+    # --- Train subcommand ---
     train_parser = subparsers.add_parser("train", help="Train the agent")
     train_parser.add_argument(
         "--episodes",
@@ -713,6 +825,7 @@ To add a new agent:
         "--resume", action="store_true", help="Resume training from checkpoint"
     )
 
+    # DQN-specific hyperparameters
     train_parser.add_argument(
         "--lr", type=float, default=1e-3, help="Learning rate (DQN)"
     )
@@ -738,6 +851,7 @@ To add a new agent:
         help="Target network update frequency (DQN)",
     )
 
+    # DDPG / TD3 / SAC hyperparameters
     train_parser.add_argument(
         "--actor-lr",
         type=float,
@@ -763,6 +877,7 @@ To add a new agent:
         help="Exploration noise std (DDPG/TD3)",
     )
 
+    # --- Eval subcommand ---
     eval_parser = subparsers.add_parser("eval", help="Evaluate the agent")
     eval_parser.add_argument(
         "--load-path",
@@ -791,6 +906,7 @@ To add a new agent:
         help="Use random target positions",
     )
 
+    # --- Play subcommand ---
     play_parser = subparsers.add_parser("play", help="Watch the trained agent")
     play_parser.add_argument(
         "--load-path",
@@ -806,6 +922,7 @@ To add a new agent:
 
     args = parser.parse_args()
 
+    # Dispatch to the appropriate mode handler
     if args.mode == "train":
         train(args)
     elif args.mode == "eval":
