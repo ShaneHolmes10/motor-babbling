@@ -92,10 +92,10 @@ This will evaluate the model by checking how many episodes in total it manages t
  
 ```bash
 # Evaluate with GUI and random targets
-python examples/Q_learning.py --agent sac eval --load-path data/checkpoints/sac.pth --gui --random-targets
+python examples/Q_learning.py --agent sac eval --gui --eval-episodes 3 --random-targets
  
 # Headless evaluation (prints success rate)
-python examples/Q_learning.py --agent sac eval --load-path data/checkpoints/sac.pth --random-targets --eval-episodes 50
+python examples/Q_learning.py --agent sac eval --random-targets --eval-episodes 50
 ```
  
 ### Play (watch indefinitely)
@@ -103,7 +103,7 @@ python examples/Q_learning.py --agent sac eval --load-path data/checkpoints/sac.
 Allows the user to adjust the position of the target using the arrow keys to see how the robot model dynamically adjusts in real time to a changing target. 
 
 ```bash
-python examples/Q_learning.py --agent sac play --load-path data/checkpoints/sac.pth --random-targets
+python examples/Q_learning.py --agent sac play --random-targets
 ```
  
 ### Manual Control
@@ -178,7 +178,7 @@ The dynamic import system will handle the rest: `--agent myagent` loads `model.m
 
 ## Acknowledgements  
 
-AI was used to aid in code development and editing parts of the report
+AI was used to aid in code development, commentation and editing parts of the report
 
 
 
